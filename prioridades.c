@@ -1,61 +1,150 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define quantidade_processos_maxima 10 
+#define QUANT_PROCESSOS 10 
+
 
 typedef struct {
 	int id;
 	int prioridade;
 	int tempo_de_execucao;
+	int tempo_de_chegada;
+	enum enum_status { executando, pronto, bloqueado } status;
 } str_processos;
 
 void inicializa_processos(str_processos *processos);
 
+void executa_processos(str_processos *processos);
+
+void print_processos(str_processos *processos);
+
+void swap_processos(str_processos *lista_de_prontos, int i);
+
+int is_lista_vazia(str_processos *lista_de_prontos, int cont);
+
 
 void main() {
 	int i = 0;
-	str_processos* processos = (str_processos*)malloc(quantidade_processos_maxima * sizeof(str_processos));
+	str_processos* processos = (str_processos*)malloc(QUANT_PROCESSOS * sizeof(str_processos) * sizeof(int));
 	
 	inicializa_processos(processos);
 	
-	for(i = 0; i < 7; i++) {
-		printf("%d %d %d\n", processos[i].id, processos[i].prioridade, processos[i].tempo_de_execucao);
-	}
+	print_processos(processos);
 	
-	
+	executa_processos(processos);
 }
 
 
 void inicializa_processos(str_processos *processos) {
-	processos[0].id = 1;
-	processos[0].prioridade = 0;
-	processos[0].tempo_de_execucao = 5;
+	int i;
+	for(i = 0; i < QUANT_PROCESSOS; i++) {
+		processos[i].id = i + 1;
+		processos[i].prioridade = rand() % 5;
+		processos[i].tempo_de_execucao = rand() % 15;
+		if(i == 0) {
+			processos[i].tempo_de_chegada = 0;
+		} else {
+			processos[i].tempo_de_chegada = (processos[i - 1].tempo_de_chegada) + rand() % 15;	
+		}
+		processos[i].status = bloqueado;
+	}
+}
+
+void executa_processos(str_processos *processos) {
+	str_processos* lista_de_prontos = (str_processos*)malloc(QUANT_PROCESSOS * sizeof(str_processos) * sizeof(int));
+	int i, cont = 0;
+	int tempo = 0;
+
+	/* WHILE que simula o tempo passando */
+	while(1) {
+		printf("tempo: %d\n", tempo);
+		/* Verifica se eh preciso adicionar novos processos na lista de pronto */
+		for(i = cont; i < QUANT_PROCESSOS; i++) {
+			if (processos[i].tempo_de_chegada <= tempo) {
+				lista_de_prontos[cont].id = processos[i].id;
+				lista_de_prontos[cont].prioridade = processos[i].prioridade;
+				lista_de_prontos[cont].tempo_de_execucao = processos[i].tempo_de_execucao;
+				lista_de_prontos[cont].tempo_de_chegada = processos[i].tempo_de_chegada;
+				cont++;
+			}
+		}
+		
+		/* Verifica qual eh o processo com mais prioridade e coloca no inicio da lista */
+		for(i = 1; i < cont; i++) {
+			if(lista_de_prontos[i].prioridade < lista_de_prontos[0].prioridade) { // se condicao = true, entao lista[0] vira o processo com maior prioridade
+				swap_processos(lista_de_prontos, i); // swap lista[i] <-> lista[0]
+			}
+		}
+		
+		if(lista_de_prontos[0].status != executando) {
+			printf("Processador ocioso, sem processos executando no momento");	
+		} else {
+			printf("Executando processo: %d\ttempo restante: %d\tprioridade: %d", lista_de_prontos[0].id, lista_de_prontos[0].tempo_de_execucao, lista_de_prontos[0].prioridade);
+			/* Decrementa tempo da execucao do processo e diminui a sua prioridade */
+			lista_de_prontos[0].tempo_de_execucao--;
+			lista_de_prontos[0].prioridade++;
+		}
+		
+		if(lista_de_prontos[0].tempo_de_execucao == 0){ // Indica que o processo terminou
+			/* Remove processo da lista */
+			lista_de_prontos[0].status = 2;
+			lista_de_prontos[0].prioridade = 1024;
+		}
+		
+		/* Sai do while se: lista possuir apenas processos bloqueado e o tamanho da lista_de_prontos for igual a quantidade de processos total */
+		if(is_lista_vazia(lista_de_prontos, cont) == 1 && cont == QUANT_PROCESSOS) {
+			break;
+		}
+		
+		printf("\n\n");
+		tempo++;
+	}
 	
-	processos[1].id = 2;
-	processos[1].prioridade = 1;
-	processos[1].tempo_de_execucao = 10;
+	printf("\n\nOs processos acabaram!\n");
+}
+
+void print_processos(str_processos *processos) {
+	int i;
 	
-	processos[2].id = 3;
-	processos[2].prioridade = 4;
-	processos[2].tempo_de_execucao = 3;
+	printf("\nLista de processos:\n");
+	for(i = 0; i < QUANT_PROCESSOS; i++) {
+		printf("id: %d \tPrioridade: %d \tTempoExec: %d \tTempoChegada: %d\tStatus: %d\n", processos[i].id, processos[i].prioridade, processos[i].tempo_de_execucao, processos[i].tempo_de_chegada, processos[i].status);
+	}
+	printf("------------------------------------------------------------\n");
 	
-	processos[3].id = 4;
-	processos[3].prioridade = 1;
-	processos[3].tempo_de_execucao = 6;
+}
+
+void swap_processos(str_processos *lista_de_prontos, int i) {
+	str_processos buffer_str_processos;
 	
-	processos[4].id = 5;
-	processos[4].prioridade = 2;
-	processos[4].tempo_de_execucao = 4;
+	buffer_str_processos.id = lista_de_prontos[0].id;
+	buffer_str_processos.prioridade = lista_de_prontos[0].prioridade;
+	buffer_str_processos.tempo_de_chegada = lista_de_prontos[0].tempo_de_chegada;
+	buffer_str_processos.tempo_de_execucao = lista_de_prontos[0].tempo_de_execucao;
 	
-	processos[5].id = 6;
-	processos[5].prioridade = 3;
-	processos[5].tempo_de_execucao = 12;
+	lista_de_prontos[0].id = lista_de_prontos[i].id;
+	lista_de_prontos[0].prioridade = lista_de_prontos[i].prioridade;
+	lista_de_prontos[0].tempo_de_chegada = lista_de_prontos[i].tempo_de_chegada;
+	lista_de_prontos[0].tempo_de_execucao = lista_de_prontos[i].tempo_de_execucao;
+	lista_de_prontos[0].status = executando;
 	
-	processos[6].id = 7;
-	processos[6].prioridade = 1;
-	processos[6].tempo_de_execucao = 5;
+	lista_de_prontos[i].id = buffer_str_processos.id;
+	lista_de_prontos[i].prioridade = buffer_str_processos.prioridade;
+	lista_de_prontos[i].tempo_de_chegada = buffer_str_processos.tempo_de_chegada;
+	lista_de_prontos[i].tempo_de_execucao = buffer_str_processos.tempo_de_execucao;
+	if(lista_de_prontos[i].prioridade != 1024)
+		lista_de_prontos[i].status = pronto;
+	else
+		lista_de_prontos[i].status = bloqueado;
+}
+
+int is_lista_vazia(str_processos *lista_de_prontos, int cont) {
+	int i;
+	for(i = 0; i < cont; i++) {
+		if(lista_de_prontos[i].status != bloqueado) { // retorna falso caso encontrar algum processo que nao esteja bloqueado (ou seja encontrou processo ativo na lista)
+			return 0;
+		}
+	}
 	
-	processos[7].id = 8;
-	processos[7].prioridade = 5;
-	processos[7].tempo_de_execucao = 13;
+	return 1; // se lista estiver sem processos prontos ou executando
 }
