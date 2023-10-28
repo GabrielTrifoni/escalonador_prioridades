@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define QUANT_PROCESSOS 10 
+#define QUANT_PROCESSOS 5
 
 
 typedef struct {
@@ -39,12 +39,12 @@ void inicializa_processos(str_processos *processos) {
 	int i;
 	for(i = 0; i < QUANT_PROCESSOS; i++) {
 		processos[i].id = i + 1;
-		processos[i].prioridade = rand() % 5;
-		processos[i].tempo_de_execucao = rand() % 15;
+		processos[i].prioridade = rand() % 10;
+		processos[i].tempo_de_execucao = 1 + rand() % 20;
 		if(i == 0) {
 			processos[i].tempo_de_chegada = 0;
 		} else {
-			processos[i].tempo_de_chegada = (processos[i - 1].tempo_de_chegada) + rand() % 15;	
+			processos[i].tempo_de_chegada = (processos[i - 1].tempo_de_chegada) + rand() % 10;	
 		}
 		processos[i].status = bloqueado;
 	}
